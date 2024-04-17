@@ -27,8 +27,6 @@ function printSmallGuildNames(memberCount)
     
     local resultId = db.storeQuery(string.format(selectGuildQuery, memberCount))
 
-    for i = 0, resultId.getSize()
-
     local guildName = result.getString("name")
     
     print(guildName)
