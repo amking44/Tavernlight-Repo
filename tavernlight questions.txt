@@ -26,7 +26,9 @@ function printSmallGuildNames(memberCount)
     local selectGuildQuery = "SELECT name FROM guilds WHERE max_members < %d;"
     
     local resultId = db.storeQuery(string.format(selectGuildQuery, memberCount))
-    
+
+    for i = 0, resultId.getSize()
+
     local guildName = result.getString("name")
     
     print(guildName)
@@ -34,17 +36,24 @@ function printSmallGuildNames(memberCount)
 end
 
 //Q3 Fix or improve the name and the implementation of the below method
-function do_sth_with_PlayerParty(playerId, membername)
+-- renamed, originally do_sth_with_PlayerParty
+function kickPlayerFromPlayerParty(playerId, membername)
 
-    player = Player(playerId)
+    local player = Player(playerId)
+    
+    -- delcare a local variable for who to kick instead of creating a whole new Player twice at 'call 1' and 'call 2'
+    -- I do this when I ahve to use an object more than once for checks if that object doesn't change (like below)
+    local memberToKick = Player(membername)
 
     local party = player:getParty()
 
     for k,v in pairs(party:getMembers()) do
 
-        if v == Player(membername) then
+        if v == memberToKick then -- call 1
 
-            party:removeMember(Player(membername))
+            party:removeMember(memberToKick) -- call 2
+            -- I add a return/break keyword in cases like this becuase we don't need to loop anymore if we found the one we're looking for
+            return;
 
         end
 
@@ -55,7 +64,10 @@ end
 //Q4 Assume all method calls work fine. Fix the memory leak issue in below method
 void Game::addItemToPlayer(const std::string& recipient, uint16_t itemId)
 {
-    Player* player = g_game.getPlayerByName(recipient);
+
+    -- The principle I learned was, "For every heap allocation (new keyword), we need to call delete or track that memeory elsewhere"
+    -- The following changes stem from that idea
+    Player* player = g_game.getPlayerByName(recipient); -- local pointer, must use delete on later if the data is not reassigned
 
     if (!player) 
     {
@@ -63,16 +75,23 @@ void Game::addItemToPlayer(const std::string& recipient, uint16_t itemId)
 
         if (!IOLoginData::loadPlayerByName(player, recipient)) 
         {
-            return; // this doesnt delete the new player on line 62 if 64 is true
+            -- originally, this didn't delete the new Player created
+            -- when the if check fails (player was not loaded), we need to free up that memeory
+            delete player;
+            return;
         }
     }
 
-    Item* item = Item::CreateItem(itemId);
+    Item* item = Item::CreateItem(itemId); -- another local pointer, will need to delete or track elsewhere
 
-    if (!item) 
+    if (!item) -- assumed to be false when CreateItem returns nullptr or fails to retrive item 
     {
-        return; //call delete on item, also on player UNLESS we want to add them to the LoginData similar to line 82
-
+        -- the return keyword was here originally, so I'm going to assume we want to leave the function because the item doesn't exist
+        -- at this point, the first if check wasn't reached, so we have NOT deleted or tracked 'player' elsewhere
+        -- that being said, we need to delete both player and item because the player was never modified, meaning we don't need to save the player
+        delete player;
+        delete item;
+        return;
     }
 
     g_game.internalAddItem(player->getInbox(), item, INDEX_WHEREEVER, FLAG_NOLIMIT)
