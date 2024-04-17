@@ -19,28 +19,37 @@ end
 
 
 //Q2 Fix or improve the implementation of the below method
+-- while doing some digging and looking around the OTClient I set up for q5-7, I found a lot of similarities between these questions and that code so I used some patterns I found in that
+-- One specific example is in this function, I found that the database code is almost identical to that of the OTClient,
+-- That being said, 'result' is a DBResultPtr(shared_object_ptr of type DBResult) and I used those functions accordingly
 function printSmallGuildNames(memberCount)
 
     -- this method is supposed to print names of all guilds that have less than memberCount max members
     
     local selectGuildQuery = "SELECT name FROM guilds WHERE max_members < %d;"
     
-    local resultId = db.storeQuery(string.format(selectGuildQuery, memberCount))
+    local result = db.storeQuery(string.format(selectGuildQuery, memberCount)) -- renamed from resultId to result
+    
+    -- first thing's first, we need to loop. after doing some digging, I found that this way works for looping through the query
 
-    local guildName = result.getString("name")
-    
-    print(guildName)
-    
+    if result ~= false then -- if the query return false, dont even worry about looping 
+		
+        repeat
+			print(result.getDataString("name")) -- this is the specific function used from DBResult, based on the original format, I'd assume 'result.getString("name")' would work too
+		until not result.next() -- this is what keeps the do-while/repeat-until loop going. Once this returns false, it exits the loop.
+
+		result.free() -- this frees the memory used by the pointer in the database.h/cpp
+	end
 end
 
 //Q3 Fix or improve the name and the implementation of the below method
 -- renamed, originally do_sth_with_PlayerParty
-function kickPlayerFromPlayerParty(playerId, membername)
+function kickMemberFromPlayerParty(playerId, membername)
 
     local player = Player(playerId)
     
     -- delcare a local variable for who to kick instead of creating a whole new Player twice at 'call 1' and 'call 2'
-    -- I do this when I ahve to use an object more than once for checks if that object doesn't change (like below)
+    -- I do this when I have to use an object more than once for checks if that object doesn't change (like below)
     local memberToKick = Player(membername)
 
     local party = player:getParty()
