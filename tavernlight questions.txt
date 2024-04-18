@@ -1,16 +1,10 @@
 //Q1 - Fix or improve the implementation of the below methods
-local function releaseStorage(player)
-
-    player:setStorageValue(1000, -1)
-    
-end
-
+-- For this I remeoved adding an event on logout becuase if the player logs out, we dont need to add a 1 second timer to a function
+-- instead just execute the function when they do log out, so the middle man is taken out here, as well as it doesn't seem like it would be setting it to something speical, just freeing the storage
 function onLogout(player)
     
     if player:getStorageValue(1000) == 1 then
-    
-        addEvent(releaseStorage, 1000, player)
-    
+        player:setStorageValue(1000, -1)
     end
     
     return true
